@@ -1,0 +1,1055 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+        <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{{ title }}</title>
+        <script>
+        (function () {
+            var t = null;
+            try { t = localStorage.getItem('theme'); } catch (e) {}
+            if (t !== 'light' && t !== 'dark') {
+                t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+            }
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0e1621;
+            --panel: #17212b;
+            --input: #242f3d;
+            --incoming: #182533;
+            --outgoing: #2b5278;
+            --accent: #3390ec;
+            --text: #f5f5f5;
+            --muted: #6c7883;
+            --meta: #7f91a4;
+            --outgoing-meta: #8fb3d6;
+            --read: #6ab3f3;
+            --pill: rgba(24, 37, 51, 0.85);
+                        --online: #6ab3f3;
+            --dot: rgba(255, 255, 255, 0.035);
+            --hover: rgba(255, 255, 255, 0.06);
+            --toast: rgba(24, 37, 51, 0.96);
+            --scroll: rgba(255, 255, 255, 0.12);
+            --edge: #0b1118;
+        }
+                :root[data-theme="light"] {
+            --bg: #d6e3ec;
+            --panel: #ffffff;
+            --input: #f0f2f5;
+            --incoming: #ffffff;
+            --outgoing: #effdde;
+            --accent: #3390ec;
+            --text: #000000;
+            --muted: #8e8e93;
+            --meta: #8e8e93;
+            --outgoing-meta: #4fae4e;
+            --read: #4fae4e;
+            --pill: rgba(0, 0, 0, 0.28);
+            --online: #3390ec;
+            --dot: rgba(0, 0, 0, 0.045);
+            --hover: rgba(0, 0, 0, 0.06);
+            --toast: rgba(30, 40, 50, 0.92);
+            --scroll: rgba(0, 0, 0, 0.2);
+            --edge: #cfd9e2;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app {
+            height: 100vh;
+            height: 100dvh;
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            border-left: 1px solid var(--edge);
+            border-right: 1px solid var(--edge);
+        }
+
+        button {
+            font: inherit;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            border: 0;
+            border-radius: 50%;
+            background: none;
+            color: var(--muted);
+            font-size: 18px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .icon-btn:hover {
+            background: var(--hover);
+        }
+
+        .icon-btn.small {
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
+        }
+
+        .icon-btn:focus-visible,
+        .send:focus-visible,
+        .msg-input:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        /* ---------- Yuqori panel ---------- */
+        .topbar {
+            flex-shrink: 0;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 8px 0 6px;
+            background: var(--panel);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            z-index: 2;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 600;
+            background: #2b82c9;
+        }
+
+        .title-block {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .title {
+            font-size: 16px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .status {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .status.online {
+            color: var(--online)
+        }
+
+        .topbar-actions {
+            display: flex;
+            gap: 2px;
+            color: var(--muted);
+        }
+
+        /* ---------- Xabarlar maydoni ---------- */
+        .messages {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 8px 10px 12px;
+            background-color: var(--bg);
+            /* Telegramdagi xira nuqtali naqsh */
+            background-image:
+                radial-gradient(circle at 16px 16px, var(--dot) 2px, transparent 2.5px),
+                radial-gradient(circle at 48px 48px, rgba(255, 255, 255, 0.035) 2px, transparent 2.5px);
+            background-size: 64px 64px;
+            overscroll-behavior: contain;
+        }
+
+        .messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: var(--scroll);
+            border-radius: 3px;
+        }
+
+        .stack {
+            margin-top: auto;
+            width: 100%;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .date-pill {
+            align-self: center;
+            margin: 12px 0 6px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            background: var(--pill);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .date-pill.empty {
+            margin: auto;
+            color: var(--meta);
+        }
+
+        /* ---------- Xabar qatori va pufakcha ---------- */
+        .row {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .row.grouped {
+            margin-top: 2px;
+        }
+
+        .row.mine {
+            justify-content: flex-end;
+        }
+
+        .row.them {
+            justify-content: flex-start;
+        }
+
+        /* Guruhda avatar uchun joy (bir xil odamning ketma-ket xabarlarida bo'sh qoladi) */
+        .ava-slot {
+            width: 32px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .ava {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .bubble {
+            position: relative;
+            min-width: 72px;
+            max-width: min(80%, 520px);
+            padding: 6px 10px 5px;
+            border-radius: 14px;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+            overflow-wrap: anywhere;
+        }
+
+        .bubble::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
+        .them .bubble {
+            background: var(--incoming);
+        }
+
+        .mine .bubble {
+            background: var(--outgoing);
+        }
+
+        /* Oxirgi xabarda "dum" (burchak) bo'ladi */
+        .them .bubble.tail {
+            border-bottom-left-radius: 4px;
+        }
+
+        .mine .bubble.tail {
+            border-bottom-right-radius: 4px;
+        }
+
+        .sender {
+            font-size: 13.5px;
+            font-weight: 500;
+            margin-bottom: 1px;
+        }
+
+        .text {
+            font-size: 15px;
+            line-height: 1.35;
+            white-space: pre-wrap;
+        }
+                .photo {
+            display: block;
+            max-width: 100%;
+            max-height: 360px;
+            border-radius: 10px;
+            margin-bottom: 4px;
+        }
+
+        .meta {
+            float: right;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            margin: 6px 0 0 10px;
+            font-size: 11.5px;
+            line-height: 1;
+            color: var(--meta);
+        }
+
+        .mine .meta {
+            color: var(--outgoing-meta);
+        }
+
+                .tick {
+            color: var(--meta);
+            font-size: 12px;
+        }
+
+        .tick.read {
+            color: var(--read);
+        }
+
+        /* ---------- Pastki yozish paneli ---------- */
+        .composer {
+            flex-shrink: 0;
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            padding: 6px 8px;
+            background: var(--panel);
+        }
+
+        .field {
+            flex: 1;
+            min-width: 0;
+            min-height: 42px;
+            display: flex;
+            align-items: flex-end;
+            gap: 0;
+            padding: 0 4px;
+            background: var(--input);
+            border-radius: 21px;
+        }
+
+        .field .icon-btn.small {
+            width: 34px;
+            height: 34px;
+            margin-bottom: 4px;
+        }
+        
+        .msg-input {
+            flex: 1;
+            min-width: 0;
+            max-height: 140px;
+            padding: 11px 6px;
+            border: 0;
+            outline: none;
+            resize: none;
+            background: transparent;
+            color: var(--text);
+            font: inherit;
+            font-size: 15px;
+            line-height: 1.35;
+        }
+
+        .msg-input::placeholder {
+            color: var(--muted);
+        }
+
+        .composer > .icon-btn {
+            margin-bottom: 1px;
+        }
+
+        .send {
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
+            border: 0;
+            border-radius: 50%;
+            background: var(--accent);
+            color: #fff;
+            font-size: 16px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .send:hover {
+            background: #4aa0f4;
+        }
+
+        .send i {
+            margin-left: 2px;
+        }
+
+        /* ---------- Xabarnoma ---------- */
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 80px;
+            transform: translateX(-50%);
+            padding: 8px 16px;
+            border-radius: 18px;
+            background: var(--toast);
+            color: #fff;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 600px) {
+            .app {
+                max-width: none;
+                border: 0;
+            }
+        }
+                .icon-btn.recording { color: #e5484d; animation: pulse 1s infinite; }
+        @keyframes pulse { 50% { opacity: 0.4; } }
+        .voice { display: block; width: 220px; max-width: 100%; margin-bottom: 4px; }
+                #media-btn { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; }
+                        .field .send { width: 36px; height: 36px; margin: 0 2px 3px 0; }
+        [hidden] {
+            display: none !important;
+        }
+        .video-note { display: block; width: 220px; height: 220px; max-width: 100%; border-radius: 50%; object-fit: cover; background: #000; margin-bottom: 4px; }
+        .vn-preview { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); width: 200px; height: 200px; border-radius: 50%; overflow: hidden; background: #000; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5); z-index: 5; }
+        .vn-preview video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .ctx-menu { position: fixed; min-width: 180px; padding: 6px 0; border-radius: 12px; background: var(--panel); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45); z-index: 10; }
+        .ctx-item { display: block; width: 100%; padding: 10px 16px; border: 0; background: none; color: var(--text); font-size: 15px; text-align: left; cursor: pointer; }
+        .ctx-item:hover { background: var(--hover); }
+        .ctx-item.danger { color: #e5484d; }
+    </style>
+</head>
+<script>window.CURRENT_CHAT = "{% if is_group %}general{% else %}u:{{ title|escapejs }}{% endif %}";</script>
+<script src="{% static 'chat/notify.js' %}"></script>
+<body>
+
+<div class="app">
+
+    <header class="topbar">
+        <a class="icon-btn" href="{% url 'chat_list' %}" aria-label="Orqaga">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+
+        {% if is_group %}
+            <div class="avatar" id="head-avatar"><i class="fa-solid fa-user-group"></i></div>
+        {% else %}
+            <div class="avatar" id="head-avatar" data-name="{{ title }}">{{ title|first|upper }}</div>
+        {% endif %}
+
+        <div class="title-block">
+            <div class="title">{{ title }}</div>
+            <div class="status" id="status">ulanmoqda...</div>
+        </div>
+
+        <div class="topbar-actions">
+                         <button class="icon-btn" type="button" aria-label="Qidirish">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+            <button class="icon-btn" type="button" aria-label="Menyu">
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="messages" id="scroller">
+        <div class="stack" id="stack"></div>
+    </main>
+
+    <form class="composer" id="composer" autocomplete="off">
+        <div class="field">
+            <button class="icon-btn small" type="button" aria-label="Emoji">
+                <i class="fa-regular fa-face-smile"></i>
+            </button>
+            <textarea id="msg-input" class="msg-input" rows="1" maxlength="1000"
+                      placeholder="Xabar" aria-label="Xabar yozing"></textarea>
+            <button class="icon-btn small" type="button" id="attach-btn" aria-label="Biriktirish">
+                <i class="fa-solid fa-paperclip"></i>
+            </button>
+            <button class="icon-btn small" type="button" id="media-btn" aria-label="Ovozli xabar yoki dumaloq video">
+                <i class="fa-solid fa-microphone" id="media-icon"></i>
+            </button>
+            <button class="send" id="send-btn" type="submit" aria-label="Yuborish" hidden>
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+    </form>
+        <input type="file" id="file-input" accept="image/*,video/*" hidden>
+
+</div>
+<div class="vn-preview" id="vn-preview" hidden>
+    <video id="vn-video" muted playsinline></video>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+{{ me|json_script:"me-data" }}
+{{ history|json_script:"history-data" }}
+{{ is_group|json_script:"is-group-data" }}
+{{ ws_path|json_script:"ws-path" }}
+
+<script>
+(() => {
+    const ME = JSON.parse(document.getElementById('me-data').textContent);
+    const HISTORY = JSON.parse(document.getElementById('history-data').textContent);
+    const IS_GROUP = JSON.parse(document.getElementById('is-group-data').textContent);
+    const WS_PATH = JSON.parse(document.getElementById('ws-path').textContent);
+
+    const scroller = document.getElementById('scroller');
+    const stack = document.getElementById('stack');
+    const form = document.getElementById('composer');
+    const input = document.getElementById('msg-input');
+    const statusEl = document.getElementById('status');
+    const toastEl = document.getElementById('toast');
+    const headAvatar = document.getElementById('head-avatar');
+
+    // Telegramdagi ism ranglari
+    const PALETTE = ['#e17076', '#7bc862', '#e5ca77', '#65aadd', '#a695e7', '#ee7aae', '#6ec9cb', '#faa774'];
+    const MONTHS = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
+                    'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'];
+    const MAX_RETRIES = 20;
+
+    function colorFor(name) {
+        let h = 0;
+        for (const ch of name) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+        return PALETTE[h % PALETTE.length];
+    }
+
+    function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+    }
+
+    function ymd(d) {
+        const p = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    }
+
+    function formatDate(s) {
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        if (s === ymd(today)) return 'Bugun';
+        if (s === ymd(yesterday)) return 'Kecha';
+        const [y, mo, d] = s.split('-').map(Number);
+        return `${d} ${MONTHS[mo - 1]} ${y}`;
+    }
+
+    // ----- Xabarlarni chizish -----
+    let lastDate = null;   // oxirgi chizilgan sana
+    let lastRow = null;    // oxirgi xabar qatori
+    let lastUser = null;   // oxirgi xabar muallifi
+    let emptyEl = null;
+
+    function addMessage(m) {
+        if (emptyEl) {
+            emptyEl.remove();
+            emptyEl = null;
+        }
+
+        if (m.date !== lastDate) {
+            stack.appendChild(el('div', 'date-pill', formatDate(m.date)));
+            lastDate = m.date;
+            lastRow = null;
+            lastUser = null;
+        }
+
+        const mine = m.user === ME;
+        const grouped = lastRow !== null && lastUser === m.user;
+
+        // Oldingi xabar endi guruh ichida — dum va avatarini olib tashlaymiz
+        if (grouped) {
+            lastRow.querySelector('.bubble').classList.remove('tail');
+            const prevAva = lastRow.querySelector('.ava');
+            if (prevAva) prevAva.replaceChildren();
+        }
+
+        const row = el('div', `row ${mine ? 'mine' : 'them'}${grouped ? ' grouped' : ''}`);
+                row.dataset.id = m.id;
+        if (!mine && IS_GROUP) {
+            const slot = el('div', 'ava-slot');
+            const ava = el('div', 'ava', m.user.charAt(0).toUpperCase());
+            ava.style.background = colorFor(m.user);
+            slot.appendChild(ava);
+            row.appendChild(slot);
+        }
+
+        const bubble = el('div', 'bubble tail');
+
+        if (!mine && IS_GROUP && !grouped) {
+            const name = el('div', 'sender', m.user);
+            name.style.color = colorFor(m.user);
+            bubble.appendChild(name);
+        }
+
+                if (m.kind === 'image' && m.url) {
+            const img = el('img', 'photo');
+            img.src = m.url;
+            img.alt = 'Rasm';
+            img.loading = 'lazy';
+            bubble.appendChild(img);
+        }
+                if (m.kind === 'video' && m.url) {
+            const video = document.createElement('video');
+            video.className = 'photo';
+            video.controls = true;
+            video.preload = 'metadata';
+            video.playsInline = true;
+            video.src = m.url;
+            bubble.appendChild(video);
+        }
+                if (m.kind === 'video_note' && m.url) {
+            const vn = document.createElement('video');
+            vn.className = 'video-note';
+            vn.style.width = '220px';
+            vn.style.height = '220px';
+            vn.style.borderRadius = '50%';
+            vn.style.objectFit = 'cover';
+            vn.controls = true;
+            vn.preload = 'metadata';
+            vn.playsInline = true;
+            vn.src = m.url;
+            bubble.appendChild(vn);
+        }
+                if (m.kind === 'audio' && m.url) {
+            const audio = document.createElement('audio');
+            audio.className = 'voice';
+            audio.controls = true;
+            audio.preload = 'metadata';
+            audio.src = m.url;
+            bubble.appendChild(audio);
+        }
+        if (m.text) {
+            bubble.appendChild(el('span', 'text', m.text));
+        }
+
+        const meta = el('span', 'meta');
+        meta.appendChild(el('span', null, m.time));
+        if (mine) {
+                        meta.appendChild(el('i', m.read ? 'fa-solid fa-check-double tick read' : 'fa-solid fa-check tick'));
+        }
+        bubble.appendChild(meta);
+
+        row.appendChild(bubble);
+        stack.appendChild(row);
+        lastRow = row;
+        lastUser = m.user;
+    }
+
+    const isNearBottom = () =>
+        scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
+    const scrollToBottom = () => {
+        scroller.scrollTop = scroller.scrollHeight;
+    };
+
+    function setStatus(text, online) {
+        statusEl.textContent = text;
+        statusEl.classList.toggle('online', Boolean(online));
+    }
+
+    let toastTimer = null;
+    function toast(message) {
+        toastEl.textContent = message;
+        toastEl.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+    }
+
+    // ----- WebSocket -----
+    let ws = null;
+    let retries = 0;
+    
+    // Qarshi tomon o'qiganini serverga xabar beramiz
+    function sendRead() {
+        if (ws && ws.readyState === WebSocket.OPEN && document.visibilityState === 'visible') {
+            ws.send(JSON.stringify({ type: 'read' }));
+        }
+    }
+
+    // Boshqa tomon o'qiganda, mening xabarlarimdagi belgilarni ko'k qilamiz
+    function applyRead(lastId) {
+        stack.querySelectorAll('.row.mine').forEach((row) => {
+            if (Number(row.dataset.id) <= lastId) {
+                const tick = row.querySelector('.tick');
+                if (tick) tick.className = 'fa-solid fa-check-double tick read';
+            }
+        });
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') sendRead();
+    });
+
+    function connect() {
+        setStatus('ulanmoqda...', false);
+        const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
+        ws = new WebSocket(`${scheme}://${location.host}${WS_PATH}`);
+
+        ws.addEventListener('open', () => {
+            retries = 0;
+            setStatus('Onlayn', true);
+                        sendRead();
+        });
+
+        ws.addEventListener('message', (event) => {
+            let data;
+            try {
+                data = JSON.parse(event.data);
+            } catch (err) {
+                return;
+            }
+                                    if (data.type === 'delete') {
+                removeRow(data.id);
+                return;
+            }
+                                    if (data.type === 'delete') {
+                document.querySelector(`.row[data-id="${data.id}"]`)?.remove();
+                return;
+            }
+                        if (data.type === 'read') {
+                applyRead(data.last_id);
+                return;
+            }
+            const stick = isNearBottom();
+            addMessage(data);
+            if (stick || data.user === ME) scrollToBottom();
+                        if (data.user !== ME) sendRead();
+        });
+
+        ws.addEventListener('close', () => {
+            setStatus('uzildi, qayta ulanmoqda...', false);
+            if (retries >= MAX_RETRIES) {
+                setStatus('uzildi. Sahifani yangilang', false);
+                return;
+            }
+            const delay = Math.min(15000, 1000 * 2 ** retries);
+            retries += 1;
+            setTimeout(connect, delay);
+        });
+    }
+
+    // ----- Yuborish -----
+    function send() {
+        const text = input.value.trim();
+        if (!text) return;
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            toast("Ulanish yo'q. Qayta ulanmoqda...");
+            return;
+        }
+        ws.send(JSON.stringify({ text }));
+        input.value = '';
+        autoGrow();
+        input.focus();
+    }
+
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        send();
+    });
+
+    // Enter — yuborish, Shift+Enter — yangi qator
+    input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+            event.preventDefault();
+            send();
+        }
+    });
+
+    function autoGrow() {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+        updateButtons();
+    }
+    input.addEventListener('input', autoGrow);
+       // ----- Fayl yuborish (rasm va video) -----
+    const attachBtn = document.getElementById('attach-btn');
+    const fileInput = document.getElementById('file-input');
+    const mediaBtn = document.getElementById('media-btn');
+    const mediaIcon = document.getElementById('media-icon');
+    const sendBtn = document.getElementById('send-btn');
+    const vnPreview = document.getElementById('vn-preview');
+    const vnVideo = document.getElementById('vn-video');
+
+    attachBtn.addEventListener('click', () => fileInput.click());
+
+    async function sendFile(file, kind) {
+        if (file.size > 50 * 1024 * 1024) {
+            toast('Fayl juda katta (50 MB gacha)');
+            return;
+        }
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('chat', window.CURRENT_CHAT);
+        fd.append('text', '');
+        if (kind) fd.append('kind', kind);
+        try {
+            const res = await fetch('/chat/upload/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content },
+                body: fd,
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                toast(data.error || "Yuborib bo'lmadi");
+            }
+        } catch (e) {
+            toast('Tarmoq xatosi');
+        }
+    }
+
+    // Rasm yoki video tanlanganda
+    fileInput.addEventListener('change', () => {
+        const f = fileInput.files[0];
+        fileInput.value = '';
+        if (!f) return;
+        const isImage = f.type.startsWith('image/');
+        const isVideo = f.type.startsWith('video/');
+        if (!isImage && !isVideo) { toast('Faqat rasm yoki video yuborish mumkin'); return; }
+        if (isImage && f.size > 10 * 1024 * 1024) { toast("Rasm 10 MB dan kichik bo'lsin"); return; }
+        if (isVideo && f.size > 50 * 1024 * 1024) { toast("Video 50 MB dan kichik bo'lsin"); return; }
+        sendFile(f);
+    });
+
+    // ----- Media tugmasi: qisqa bosish - rejim almashadi, bosib turish - yozadi -----
+    let mode = 'audio';        // 'audio' (mikrofon) yoki 'video' (kamera)
+    let recorder = null;
+    let chunks = [];
+    let stream = null;
+    let holding = false;
+    let holdTimer = null;
+
+    function setMode(newMode) {
+        mode = newMode;
+        mediaIcon.className = mode === 'audio' ? 'fa-solid fa-microphone' : 'fa-solid fa-video';
+    }
+
+    async function startRecording() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            toast("Mikrofon/kamera ishlamaydi. Sayt HTTPS yoki localhost da bo'lishi kerak");
+            return;
+        }
+        const isVideo = mode === 'video';
+        let s;
+        try {
+            s = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: isVideo ? { facingMode: 'user', width: 480, height: 480 } : false,
+            });
+        } catch (e) {
+            toast(isVideo ? 'Kameraga ruxsat berilmadi' : 'Mikrofonga ruxsat berilmadi');
+            return;
+        }
+        // Ruxsat so'ralayotganda barmoq ko'tarilib qolgan bo'lsa, yozmaymiz
+        if (!holding) {
+            s.getTracks().forEach(t => t.stop());
+            return;
+        }
+
+        stream = s;
+        chunks = [];
+        const wanted = isVideo ? 'video/webm' : 'audio/webm';
+        recorder = MediaRecorder.isTypeSupported(wanted)
+            ? new MediaRecorder(stream, { mimeType: wanted })
+            : new MediaRecorder(stream);
+        recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+        recorder.onstop = () => {
+            const type = recorder.mimeType || wanted;
+            stream.getTracks().forEach(t => t.stop());
+            stream = null;
+            vnVideo.srcObject = null;
+            vnPreview.hidden = true;
+            mediaBtn.classList.remove('recording');
+            const blob = new Blob(chunks, { type });
+            if (blob.size === 0) return;
+            if (isVideo) {
+                sendFile(new File([blob], 'video-note.webm', { type }), 'video_note');
+            } else {
+                const ext = type.includes('ogg') ? 'ogg' : type.includes('mp4') ? 'm4a' : 'webm';
+                sendFile(new File([blob], `voice.${ext}`, { type }));
+            }
+        };
+
+        if (isVideo) {
+            vnVideo.srcObject = stream;
+            vnVideo.muted = true;
+            vnVideo.play();
+            vnPreview.hidden = false;
+        }
+        recorder.start();
+        mediaBtn.classList.add('recording');
+    }
+
+    mediaBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    mediaBtn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        holding = true;
+        // 250 ms dan uzoq bosilsa - yozish boshlanadi
+        holdTimer = setTimeout(() => {
+            holdTimer = null;
+            startRecording();
+        }, 250);
+    });
+
+    function release() {
+        if (!holding) return;
+        holding = false;
+        if (holdTimer) {
+            // Qisqa bosish: faqat rejimni almashtiramiz
+            clearTimeout(holdTimer);
+            holdTimer = null;
+            setMode(mode === 'audio' ? 'video' : 'audio');
+            return;
+        }
+        // Yozish davom etayotgan bo'lsa, to'xtatib yuboramiz
+        if (recorder && recorder.state === 'recording') recorder.stop();
+    }
+
+    document.addEventListener('pointerup', release);
+    document.addEventListener('pointercancel', release);
+
+    // Matn yozilganda yuborish tugmasi chiqadi, bo'sh bo'lsa media tugmasi
+    function updateButtons() {
+        const hasText = input.value.trim().length > 0;
+        sendBtn.hidden = !hasText;
+        mediaBtn.hidden = hasText;
+    }
+    input.addEventListener('input', updateButtons);
+    updateButtons();
+    
+    if (IS_GROUP) {
+        headAvatar.style.background = '#2b82c9';
+    } else {
+        headAvatar.style.background = colorFor(headAvatar.dataset.name);
+    }
+
+    if (HISTORY.length === 0) {
+        emptyEl = el('div', 'date-pill empty', 'Yozishmani boshlang...');
+        stack.appendChild(emptyEl);
+    } else {
+        HISTORY.forEach(addMessage);
+    }
+    scrollToBottom();
+    connect();
+})();
+</script>
+<script>
+(() => {
+    const stack = document.getElementById('stack');
+    const csrf = () => document.querySelector('meta[name="csrf-token"]').content;
+    let menu = null;
+    let timer = null;
+
+    function closeMenu() {
+        if (menu) { menu.remove(); menu = null; }
+    }
+
+    async function removeMessage(id) {
+        closeMenu();
+        if (!confirm("Xabar o'chirilsinmi?")) return;
+        try {
+            const res = await fetch(`/chat/delete/${id}/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf() },
+                credentials: 'same-origin',
+            });
+            if (!res.ok) {
+                alert("O'chirib bo'lmadi. Xato kodi: " + res.status);
+                return;
+            }
+            const row = stack.querySelector(`.row[data-id="${id}"]`);
+            if (row) row.remove();
+        } catch (e) {
+            alert('Tarmoq xatosi');
+        }
+    }
+
+    function openMenu(x, y, id) {
+        closeMenu();
+        menu = document.createElement('div');
+        menu.className = 'ctx-menu';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ctx-item danger';
+        btn.textContent = "O'chirish";
+        btn.addEventListener('click', () => removeMessage(id));
+        menu.appendChild(btn);
+        document.body.appendChild(menu);
+        menu.style.left = Math.max(8, Math.min(x, innerWidth - menu.offsetWidth - 8)) + 'px';
+        menu.style.top = Math.max(8, Math.min(y, innerHeight - menu.offsetHeight - 8)) + 'px';
+    }
+
+    // Kompyuterda o'ng tugma
+    stack.addEventListener('contextmenu', (e) => {
+        const row = e.target.closest('.row.mine');
+        if (!row) return;
+        e.preventDefault();
+        openMenu(e.clientX, e.clientY, row.dataset.id);
+    });
+
+    // Telefonda uzoq bosish
+    stack.addEventListener('pointerdown', (e) => {
+        const row = e.target.closest('.row.mine');
+        if (!row || e.button !== 0) return;
+        const id = row.dataset.id;
+        const x = e.clientX;
+        const y = e.clientY;
+        clearTimeout(timer);
+        timer = setTimeout(() => openMenu(x, y, id), 500);
+    });
+    ['pointerup', 'pointercancel', 'pointermove'].forEach((ev) =>
+        stack.addEventListener(ev, () => clearTimeout(timer)));
+
+    document.addEventListener('pointerdown', (e) => {
+        if (menu && !menu.contains(e.target)) closeMenu();
+    });
+})();
+</script>
+</body>
+</html>

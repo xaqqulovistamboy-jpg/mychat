@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kirish</title>
+    <script>
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('theme'); } catch (e) {}
+      if (t !== 'light' && t !== 'dark') {
+        t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      }
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+      <style>
+        /* Ranglar faqat shu yerda. Tungi rejim — standart, kunduzgi — [data-theme="light"] */
+        :root {
+            --bg: #0e1621;
+            --panel: #17212b;
+            --input: #242f3d;
+            --text: #f5f5f5;
+            --muted: #708499;
+            --accent: #3390ec;
+            --accent-hover: #4aa0f4;
+            --error: #ff6b6b;
+            --error-bg: rgba(255, 107, 107, 0.12);
+            --shadow: 0 0 24px rgba(0, 0, 0, 0.35);
+                        --logo: linear-gradient(135deg, #2aabee, #229ed9);
+        }
+
+        :root[data-theme="light"] {
+            --bg: #d6e3ec;
+            --panel: #ffffff;
+            --input: #f0f2f5;
+            --text: #000000;
+            --muted: #8e8e93;
+            --accent: #3390ec;
+            --accent-hover: #4aa0f4;
+            --error: #d93025;
+            --error-bg: rgba(217, 48, 37, 0.08);
+            --shadow: 0 0 24px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        html, body { height: 100%; }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 36px 28px;
+            background: var(--panel);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+                /* Telegram ko'k rangidagi yumaloq burchakli kvadrat logo */
+        .logo-icon {
+            width: 76px;
+            height: 76px;
+            margin: 0 auto 10px;
+            border-radius: 22px;
+            background: var(--logo);
+            color: #fff;
+            font-size: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 14px rgba(42, 171, 238, 0.35);
+        }
+
+        /* Logo ostidagi "mychat" yozuvi */
+        .brand {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: var(--text);
+            margin-bottom: 22px;
+        }
+
+        h2 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 26px;
+        }
+
+        .error-msg {
+            background: var(--error-bg);
+            color: var(--error);
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 18px;
+            text-align: left;
+        }
+
+        form { text-align: left; }
+
+        .form-group { margin-bottom: 16px; }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        form input[type="text"],
+        form input[type="password"] {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            background: var(--input);
+            color: var(--text);
+            font-size: 15px;
+            outline: none;
+        }
+
+        form input:focus { border-color: var(--accent); }
+
+        .form-options {
+            display: flex;
+            justify-content: flex-end;
+            margin: -4px 0 20px;
+        }
+
+        .forgot-link {
+            color: var(--accent);
+            font-size: 13px;
+            text-decoration: none;
+        }
+
+        .forgot-link:hover { text-decoration: underline; }
+
+        .btn-submit {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 12px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-submit:hover { background: var(--accent-hover); }
+
+        .footer-text {
+            margin-top: 22px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .footer-text a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .footer-text a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+  
+
+  <div class="login-card">
+            <div class="logo-icon"><i class="fa-solid fa-comments"></i></div>
+    <div class="brand">mychat</div>
+    <h2>Xush kelibsiz!</h2>
+    <p class="subtitle">Akkountingizga kirish uchun ma'lumotlarni kiriting</p>
+
+    {% if form.errors %}
+      <div class="error-msg">Foydalanuvchi nomi yoki parol noto'g'ri kiritildi.</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label for="{{ form.username.id_for_label }}">Foydalanuvchi nomi:</label>
+        {{ form.username }}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.password.id_for_label }}">Parol:</label>
+        {{ form.password }}
+      </div>
+
+      <div class="form-options">
+        <a href="#" class="forgot-link">Parolni unutdingizmi?</a>
+      </div>
+
+      <button type="submit" class="btn-submit">Chatga kirish</button>
+    </form>
+
+    <div class="footer-text">
+     Hisobingiz yo'qmi? <a href="{% url 'signup' %}">Ro'yxatdan o'ting</a>
+    </div>
+  </div>
+
+</body>
+</html>
